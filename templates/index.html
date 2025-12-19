@@ -189,7 +189,7 @@
                         <th style="border: 1px solid black; padding: 8px;">Departure Airport</th>
                         <th style="border: 1px solid black; padding: 8px;">Arrival Airport</th>
                         <th style="border: 1px solid black; padding: 8px;">Date</th>
-                        <th style="border: 1px solid black; padding: 8px;">${hasPredictions ? '🤖 AI Price' : 'Price'}</th>
+                        <th style="border: 1px solid black; padding: 8px;">${hasPredictions ? 'Price' : 'Price'}</th>
                     </tr>
                 </thead>
                 <tbody id="flightsTableBody"></tbody>
@@ -286,7 +286,7 @@
                 
                 // Use predicted price if available, otherwise use base price
                 const displayPrice = hotel.predicted_price || hotel.baseprice || 0;
-                const priceLabel = hotel.predicted_price ? '🤖 AI Price per night:' : 'Price per night:';
+                const priceLabel = hotel.predicted_price ? 'Price per night:' : 'Price per night:';
                 
                 hotelCard.innerHTML = `
                     <h3>${hotel.hotelname || 'Hotel'}</h3>

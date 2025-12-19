@@ -11,12 +11,15 @@ import os
 from supabase import create_client, Client
 from sklearn.preprocessing import StandardScaler
 import secrets
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 
-SUPABASE_URL = os.getenv('SUPABASE_URL', 'your-supabase-url')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'your-supabase-key')
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 MODEL_DIR = './models'
 
 kmeans_model = None
@@ -173,6 +176,7 @@ def predict_segment(features):
     df = pd.DataFrame([features], columns=feature_names)
     X_scaled = scaler.transform(df)
     segment = kmeans_model.predict(X_scaled)[0]
+    return int(segment)
 
 
 def generate_packages_for_customer(customer_id, segment, num_packages=5):
@@ -387,7 +391,7 @@ def get_flights():
         if flight_price_model is not None:
             for flight in flights:
                 predicted_price = predict_flight_price(flight)
-                flight['predicted_price'] = predicted_price
+                flight['predicted_price'] = predicted_price // 100
         
         return jsonify({'flights': flights})
     except Exception as e:
@@ -403,7 +407,7 @@ def get_hotels():
         if hotel_price_model is not None:
             for hotel in hotels:
                 predicted_price = predict_hotel_price(hotel)
-                hotel['predicted_price'] = predicted_price
+                hotel['predicted_price'] = predicted_price // 1000
         
         return jsonify({'hotels': hotels})
     except Exception as e:
@@ -439,7 +443,7 @@ if __name__ == '__main__':
     print("\n" + "="*80)
     print("Starting web server...")
     print("="*80)
-    print("\n🌐 Access the app at: http://localhost:5000")
+    print("\n🌐 Access the app at: http://localhost:5050")
     print("Press CTRL+C to stop\n")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5050)
