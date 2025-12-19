@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirStay Package Generator</title>
+</head>
+<body>
+    <h1>🏖️ AirStay Travel Booking System</h1>
+    <p>Book flights, hotels, or get AI-powered package recommendations</p>
+    
+    <hr>
+    
+    <!-- Tab Navigation -->
+    <div>
+        <button onclick="showTab('packages')" id="packagesTab" style="padding: 10px 20px; margin-right: 5px; font-weight: bold;">AI Packages</button>
+        <button onclick="showTab('flights')" id="flightsTab" style="padding: 10px 20px; margin-right: 5px;">Browse Flights</button>
+        <button onclick="showTab('hotels')" id="hotelsTab" style="padding: 10px 20px;">Browse Hotels</button>
+    </div>
+    
+    <hr>
+    
+    <!-- PACKAGES TAB -->
+    <div id="packagesContent">
+        <h2>AI-Powered Package Generator</h2>
+        <p>Enter a customer ID to generate personalized travel packages</p>
+        
+        <form id="packageForm">
+            <label for="customerId">Customer ID:</label>
+            <input type="number" id="customerId" name="customerId" required>
+            <br><br>
+            
+            <label for="numPackages">Number of Packages:</label>
+            <input type="number" id="numPackages" name="numPackages" value="5" min="1" max="20">
+            <br><br>
+            
+            <button type="submit">Generate Packages</button>
+        </form>
+        
+        <hr>
+        
+        <div id="loading" style="display: none;">
+            <h2>⏳ Generating packages...</h2>
+            <p>Please wait while we analyze customer behavior and create personalized recommendations.</p>
+        </div>
+        
+        <div id="error" style="display: none; color: red;">
+            <h2>❌ Error</h2>
+            <p id="errorMessage"></p>
+        </div>
+        
+        <div id="results" style="display: none;">
+            <h2>✅ Generated Packages</h2>
+            
+            <div id="customerInfo">
+                <h3>Customer Information</h3>
+                <p><strong>Customer ID:</strong> <span id="displayCustomerId"></span></p>
+                <p><strong>Age:</strong> <span id="displayAge"></span></p>
+                <p><strong>Total Page Views:</strong> <span id="displayPageViews"></span></p>
+                <p><strong>Total Searches:</strong> <span id="displaySearches"></span></p>
+                <p><strong>Previous Purchases:</strong> <span id="displayPurchases"></span></p>
+            </div>
+            
+            <hr>
+            
+            <div id="segmentInfo">
+                <h3>Customer Segment</h3>
+                <p><strong>Segment:</strong> <span id="segmentName"></span></p>
+                <p><strong>Segment ID:</strong> <span id="segmentId"></span></p>
+            </div>
+            
+            <hr>
+            
+            <h3>Recommended Packages</h3>
+            <div id="packagesContainer" style="display: flex; flex-wrap: wrap; gap: 20px;"></div>
+        </div>
+    </div>
+    
+    <!-- FLIGHTS TAB -->
+    <div id="flightsContent" style="display: none;">
+        <h2>✈️ Available Flights</h2>
+        <p>Browse all available flights in our database</p>
+        
+        <div style="margin-bottom: 20px;">
+            <label>Filter by Country: </label>
+            <input type="text" id="flightCountryFilter" placeholder="Enter country name..." onkeyup="filterFlights()">
+        </div>
+        
+        <div id="flightsLoading">Loading flights...</div>
+        <div id="flightsError" style="display: none; color: red;"></div>
+        <div id="flightsContainer"></div>
+    </div>
+    
+    <!-- HOTELS TAB -->
+    <div id="hotelsContent" style="display: none;">
+        <h2>🏨 Available Hotels</h2>
+        <p>Browse all available hotels in our database</p>
+        
+        <div style="margin-bottom: 20px;">
+            <label>Filter by Country: </label>
+            <input type="text" id="hotelCountryFilter" placeholder="Enter country name..." onkeyup="filterHotels()">
+            
+            <label style="margin-left: 20px;">Min Rating: </label>
+            <select id="hotelRatingFilter" onchange="filterHotels()">
+                <option value="0">All Ratings</option>
+                <option value="3">3+ Stars</option>
+                <option value="4">4+ Stars</option>
+                <option value="5">5 Stars</option>
+            </select>
+        </div>
+        
+        <div id="hotelsLoading">Loading hotels...</div>
+        <div id="hotelsError" style="display: none; color: red;"></div>
+        <div id="hotelsContainer"></div>
+    </div>
+    
+    <script>
+        // Global variables
+        let allFlights = [];
+        let allHotels = [];
+        
+        // Tab Management
+        function showTab(tabName) {
+            // Hide all content
+            document.getElementById('packagesContent').style.display = 'none';
+            document.getElementById('flightsContent').style.display = 'none';
+            document.getElementById('hotelsContent').style.display = 'none';
+            
+            // Reset button styles
+            document.getElementById('packagesTab').style.fontWeight = 'normal';
+            document.getElementById('flightsTab').style.fontWeight = 'normal';
+            document.getElementById('hotelsTab').style.fontWeight = 'normal';
+            
+            // Show selected content
+            if (tabName === 'packages') {
+                document.getElementById('packagesContent').style.display = 'block';
+                document.getElementById('packagesTab').style.fontWeight = 'bold';
+            } else if (tabName === 'flights') {
+                document.getElementById('flightsContent').style.display = 'block';
+                document.getElementById('flightsTab').style.fontWeight = 'bold';
+                if (allFlights.length === 0) loadFlights();
+            } else if (tabName === 'hotels') {
+                document.getElementById('hotelsContent').style.display = 'block';
+                document.getElementById('hotelsTab').style.fontWeight = 'bold';
+                if (allHotels.length === 0) loadHotels();
+            }
+        }
+        
+        // Load Flights
+        async function loadFlights() {
+            try {
+                const response = await fetch('/api/flights');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load flights');
+                }
+                
+                allFlights = data.flights;
+                document.getElementById('flightsLoading').style.display = 'none';
+                displayFlights(allFlights);
+            } catch (error) {
+                document.getElementById('flightsLoading').style.display = 'none';
+                document.getElementById('flightsError').style.display = 'block';
+                document.getElementById('flightsError').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        // Display Flights
+        function displayFlights(flights) {
+            const container = document.getElementById('flightsContainer');
+            container.innerHTML = '';
+            
+            if (flights.length === 0) {
+                container.innerHTML = '<p>No flights found.</p>';
+                return;
+            }
+            
+            const hasPredictions = flights.some(f => f.predicted_price !== null && f.predicted_price !== undefined);
+            
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            
+            let headerHTML = `
+                <thead>
+                    <tr style="background-color: #f0f0f0;">
+                        <th style="border: 1px solid black; padding: 8px;">Flight Number</th>
+                        <th style="border: 1px solid black; padding: 8px;">Departure Airport</th>
+                        <th style="border: 1px solid black; padding: 8px;">Arrival Airport</th>
+                        <th style="border: 1px solid black; padding: 8px;">Date</th>
+                        <th style="border: 1px solid black; padding: 8px;">Price</th>`;
+            
+            headerHTML += `</tr></thead>`;
+            table.innerHTML = headerHTML + '<tbody id="flightsTableBody"></tbody>';
+            
+            const tbody = table.querySelector('#flightsTableBody');
+            flights.forEach(flight => {
+                const row = document.createElement('tr');
+                const dateCol = flight.departuredate || flight.departure_date || flight.flightdate || flight.date || 'N/A';
+                const predictedPrice = flight.predicted_price;
+
+                let rowHTML = `
+                    <td style="border: 1px solid black; padding: 8px;">${flight.flightnumber}</td>
+                    <td style="border: 1px solid black; padding: 8px;">${flight.departureairportid}</td>
+                    <td style="border: 1px solid black; padding: 8px;">${flight.arrivalairportid}</td>
+                    <td style="border: 1px solid black; padding: 8px;">${dateCol}</td>`;
+
+                if (hasPredictions) {
+                    if (predictedPrice) {
+                        rowHTML += `
+                            <td style="border: 1px solid black; padding: 8px; font-weight: bold; color: blue;">
+                                $${predictedPrice.toFixed(0)}
+                            </td>`;
+                    } else {
+                        rowHTML += `
+                            <td style="border: 1px solid black; padding: 8px; color: gray;">N/A</td>`;
+                    }
+                }
+
+                row.innerHTML = rowHTML;
+                tbody.appendChild(row);
+            });
+            container.appendChild(table);
+            
+            if (hasPredictions) {
+                container.innerHTML += '<p style="color: green;"><strong>✅ AI price predictions enabled!</strong> Predicted prices use machine learning based on airline, route, and date.</p>';
+            }
+            
+            container.innerHTML += `<p><strong>Total Flights:</strong> ${flights.length}</p>`;
+        }
+        
+        // Filter Flights
+        function filterFlights() {
+            const filterValue = document.getElementById('flightCountryFilter').value.toLowerCase();
+            
+            if (!filterValue) {
+                displayFlights(allFlights);
+                return;
+            }
+            
+            const filtered = allFlights.filter(flight => {
+                const searchString = JSON.stringify(flight).toLowerCase();
+                return searchString.includes(filterValue);
+            });
+            
+            displayFlights(filtered);
+        }
+        
+        // Load Hotels
+        async function loadHotels() {
+            try {
+                const response = await fetch('/api/hotels');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to load hotels');
+                }
+                
+                allHotels = data.hotels;
+                document.getElementById('hotelsLoading').style.display = 'none';
+                displayHotels(allHotels);
+            } catch (error) {
+                document.getElementById('hotelsLoading').style.display = 'none';
+                document.getElementById('hotelsError').style.display = 'block';
+                document.getElementById('hotelsError').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        // Display Hotels
+        function displayHotels(hotels) {
+            const container = document.getElementById('hotelsContainer');
+            container.innerHTML = '';
+            
+            if (hotels.length === 0) {
+                container.innerHTML = '<p>No hotels found.</p>';
+                return;
+            }
+            
+            const hasPredictions = hotels.some(h => h.predicted_price !== null && h.predicted_price !== undefined);
+            
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.gap = '20px';
+            
+            hotels.forEach(hotel => {
+                const hotelCard = document.createElement('div');
+                hotelCard.style.border = '1px solid black';
+                hotelCard.style.padding = '15px';
+                hotelCard.style.width = '300px';
+                hotelCard.style.boxSizing = 'border-box';
+                
+                const stars = '⭐'.repeat(Math.floor(hotel.hotelrating));
+                const predictedPrice = hotel.predicted_price;
+    
+                let priceHTML = `<p>Price unavailable</p>`;
+                
+                if (predictedPrice) {
+                    priceHTML = `
+                        <p style="font-weight: bold; color: blue; font-size: 1.2em;">
+                            <strong>🤖 AI Predicted:</strong> $${predictedPrice.toFixed(0)}/night
+                        </p>`;
+                }
+                
+                hotelCard.innerHTML = `
+                    <h3>${hotel.hotelname || 'Hotel'}</h3>
+                    <p><strong>Country:</strong> ${hotel.country}</p>
+                    <p><strong>Rating:</strong> ${stars} (${hotel.hotelrating})</p>
+                    ${priceHTML}
+                `;
+                
+                container.appendChild(hotelCard);
+            });
+            
+            const totalDiv = document.createElement('div');
+            totalDiv.style.width = '100%';
+            
+            if (hasPredictions) {
+                totalDiv.innerHTML = `
+                    <p style="color: green;"><strong>✅ AI price predictions enabled!</strong> Predicted prices use machine learning based on location, rating, room type, and bed type.</p>
+                    <p><strong>Total Hotels:</strong> ${hotels.length}</p>`;
+            } else {
+                totalDiv.innerHTML = `<p><strong>Total Hotels:</strong> ${hotels.length}</p>`;
+            }
+            
+            container.appendChild(totalDiv);
+        }
+        
+        // Filter Hotels
+        function filterHotels() {
+            const countryFilter = document.getElementById('hotelCountryFilter').value.toLowerCase();
+            const ratingFilter = parseFloat(document.getElementById('hotelRatingFilter').value);
+            
+            let filtered = allHotels;
+            
+            if (countryFilter) {
+                filtered = filtered.filter(hotel => 
+                    hotel.country.toLowerCase().includes(countryFilter)
+                );
+            }
+            
+            if (ratingFilter > 0) {
+                filtered = filtered.filter(hotel => hotel.hotelrating >= ratingFilter);
+            }
+            
+            displayHotels(filtered);
+        }
+        
+        // Package Generation (existing code)
+        const form = document.getElementById('packageForm');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            error.style.display = 'none';
+            results.style.display = 'none';
+            loading.style.display = 'block';
+            
+            const customerId = document.getElementById('customerId').value;
+            const numPackages = document.getElementById('numPackages').value;
+            
+            try {
+                const response = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        customer_id: parseInt(customerId),
+                        num_packages: parseInt(numPackages)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+                
+                displayResults(data);
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                document.getElementById('errorMessage').textContent = err.message;
+            }
+        });
+        
+        function displayResults(data) {
+            loading.style.display = 'none';
+            results.style.display = 'block';
+            
+            document.getElementById('displayCustomerId').textContent = data.customer_id;
+            document.getElementById('displayAge').textContent = data.features.CustomerAge;
+            document.getElementById('displayPageViews').textContent = data.features.TotalPageViews;
+            document.getElementById('displaySearches').textContent = data.features.TotalSearches;
+            document.getElementById('displayPurchases').textContent = data.features.PreviousPurchaseCount;
+            
+            document.getElementById('segmentName').textContent = data.segment.name;
+            document.getElementById('segmentId').textContent = data.segment.id;
+            
+            const container = document.getElementById('packagesContainer');
+            container.innerHTML = '';
+            
+            data.packages.forEach((pkg, index) => {
+                const packageDiv = document.createElement('div');
+                packageDiv.style.border = '1px solid black';
+                packageDiv.style.padding = '10px';
+                packageDiv.style.width = '300px';
+                packageDiv.style.boxSizing = 'border-box';
+                
+                packageDiv.innerHTML = `
+                    <h4>Package ${index + 1}: ${pkg.destination}</h4>
+                    
+                    <p><strong>Total Price: $${pkg.total_price}</strong></p>
+                    <p><strong>Trip Duration:</strong> ${pkg.trip_duration} days</p>
+                    
+                    <h5>Hotel</h5>
+                    <ul>
+                        <li>Name: ${pkg.hotel.name}</li>
+                        <li>Rating: ${pkg.hotel.rating} stars</li>
+                        <li>Price per night: $${pkg.hotel.price_per_night}</li>
+                    </ul>
+                    
+                    <h5>Outbound Flight</h5>
+                    <ul>
+                        <li>Flight Number: ${pkg.outbound_flight.number}</li>
+                        <li>Date: ${pkg.outbound_flight.date}</li>
+                        <li>Price: $${pkg.outbound_flight.price}</li>
+                    </ul>
+                    
+                    <h5>Return Flight</h5>
+                    <ul>
+                        <li>Flight Number: ${pkg.inbound_flight.number}</li>
+                        <li>Date: ${pkg.inbound_flight.date}</li>
+                        <li>Price: $${pkg.inbound_flight.price}</li>
+                    </ul>
+                    
+                    ${pkg.car ? `
+                        <h5>Car Rental</h5>
+                        <ul>
+                            <li>Make/Model: ${pkg.car.make} ${pkg.car.model}</li>
+                            <li>License: ${pkg.car.license}</li>
+                        </ul>
+                    ` : '<p><em>No car rental included</em></p>'}
+                `;
+                
+                container.appendChild(packageDiv);
+            });
+        }
+    </script>
+</body>
+</html>

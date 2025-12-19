@@ -1,0 +1,27 @@
+# Environment Variables (CRITICAL)
+.env
+.env.local
+.env.*
+
+# Python - Virtual Environments
+venv/
+env/
+.venv/
+ENV/
+
+# Python - Cache and Compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Models and Large Data
+# (If your MODEL_DIR contains large files, ignore them)
+models/
+*.pt
+*.pth
+*.bin
+*.h5
+
+# OS specific files
+.DS_Store
+Thumbs.db
