@@ -182,49 +182,41 @@
             table.style.width = '100%';
             table.style.borderCollapse = 'collapse';
             
-            let headerHTML = `
+            table.innerHTML = `
                 <thead>
                     <tr style="background-color: #f0f0f0;">
                         <th style="border: 1px solid black; padding: 8px;">Flight Number</th>
                         <th style="border: 1px solid black; padding: 8px;">Departure Airport</th>
                         <th style="border: 1px solid black; padding: 8px;">Arrival Airport</th>
                         <th style="border: 1px solid black; padding: 8px;">Date</th>
-                        <th style="border: 1px solid black; padding: 8px;">Price</th>`;
-            
-            headerHTML += `</tr></thead>`;
-            table.innerHTML = headerHTML + '<tbody id="flightsTableBody"></tbody>';
+                        <th style="border: 1px solid black; padding: 8px;">${hasPredictions ? '🤖 AI Price' : 'Price'}</th>
+                    </tr>
+                </thead>
+                <tbody id="flightsTableBody"></tbody>
+            `;
             
             const tbody = table.querySelector('#flightsTableBody');
             flights.forEach(flight => {
                 const row = document.createElement('tr');
                 const dateCol = flight.departuredate || flight.departure_date || flight.flightdate || flight.date || 'N/A';
-                const predictedPrice = flight.predicted_price;
-
-                let rowHTML = `
+                
+                // Use predicted price if available, otherwise use base price
+                const displayPrice = flight.predicted_price || flight.baseprice || 0;
+                
+                row.innerHTML = `
                     <td style="border: 1px solid black; padding: 8px;">${flight.flightnumber}</td>
                     <td style="border: 1px solid black; padding: 8px;">${flight.departureairportid}</td>
                     <td style="border: 1px solid black; padding: 8px;">${flight.arrivalairportid}</td>
-                    <td style="border: 1px solid black; padding: 8px;">${dateCol}</td>`;
-
-                if (hasPredictions) {
-                    if (predictedPrice) {
-                        rowHTML += `
-                            <td style="border: 1px solid black; padding: 8px; font-weight: bold; color: blue;">
-                                $${predictedPrice.toFixed(0)}
-                            </td>`;
-                    } else {
-                        rowHTML += `
-                            <td style="border: 1px solid black; padding: 8px; color: gray;">N/A</td>`;
-                    }
-                }
-
-                row.innerHTML = rowHTML;
+                    <td style="border: 1px solid black; padding: 8px;">${dateCol}</td>
+                    <td style="border: 1px solid black; padding: 8px; font-weight: bold;">$${displayPrice.toFixed(0)}</td>
+                `;
                 tbody.appendChild(row);
             });
+            
             container.appendChild(table);
             
             if (hasPredictions) {
-                container.innerHTML += '<p style="color: green;"><strong>✅ AI price predictions enabled!</strong> Predicted prices use machine learning based on airline, route, and date.</p>';
+                container.innerHTML += '<p style="color: green;"><strong>✅ AI price predictions enabled!</strong> Prices shown are machine learning predictions based on airline, route, and date.</p>';
             }
             
             container.innerHTML += `<p><strong>Total Flights:</strong> ${flights.length}</p>`;
@@ -291,22 +283,16 @@
                 hotelCard.style.boxSizing = 'border-box';
                 
                 const stars = '⭐'.repeat(Math.floor(hotel.hotelrating));
-                const predictedPrice = hotel.predicted_price;
-    
-                let priceHTML = `<p>Price unavailable</p>`;
                 
-                if (predictedPrice) {
-                    priceHTML = `
-                        <p style="font-weight: bold; color: blue; font-size: 1.2em;">
-                            <strong>🤖 AI Predicted:</strong> $${predictedPrice.toFixed(0)}/night
-                        </p>`;
-                }
+                // Use predicted price if available, otherwise use base price
+                const displayPrice = hotel.predicted_price || hotel.baseprice || 0;
+                const priceLabel = hotel.predicted_price ? '🤖 AI Price per night:' : 'Price per night:';
                 
                 hotelCard.innerHTML = `
                     <h3>${hotel.hotelname || 'Hotel'}</h3>
                     <p><strong>Country:</strong> ${hotel.country}</p>
                     <p><strong>Rating:</strong> ${stars} (${hotel.hotelrating})</p>
-                    ${priceHTML}
+                    <p style="font-weight: bold;"><strong>${priceLabel}</strong> $${displayPrice.toFixed(0)}</p>
                 `;
                 
                 container.appendChild(hotelCard);
@@ -317,7 +303,7 @@
             
             if (hasPredictions) {
                 totalDiv.innerHTML = `
-                    <p style="color: green;"><strong>✅ AI price predictions enabled!</strong> Predicted prices use machine learning based on location, rating, room type, and bed type.</p>
+                    <p style="color: green;"><strong>✅ AI price predictions enabled!</strong> Prices shown are machine learning predictions based on location, rating, room type, and bed type.</p>
                     <p><strong>Total Hotels:</strong> ${hotels.length}</p>`;
             } else {
                 totalDiv.innerHTML = `<p><strong>Total Hotels:</strong> ${hotels.length}</p>`;
@@ -414,6 +400,7 @@
                 
                 packageDiv.innerHTML = `
                     <h4>Package ${index + 1}: ${pkg.destination}</h4>
+                    <p style="color: blue;"><strong>Package ID: ${pkg.package_id}</strong></p>
                     
                     <p><strong>Total Price: $${pkg.total_price}</strong></p>
                     <p><strong>Trip Duration:</strong> ${pkg.trip_duration} days</p>
