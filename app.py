@@ -279,7 +279,7 @@ def get_flights():
         if flight_price_model is not None:
             for flight in flights:
                 predicted_price = predict_flight_price(flight)
-                flight['predicted_price'] = predicted_price
+                flight['predicted_price'] = predicted_price // 100
         return jsonify({'flights': flights})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -292,7 +292,7 @@ def get_hotels():
         if hotel_price_model is not None:
             for hotel in hotels:
                 predicted_price = predict_hotel_price(hotel)
-                hotel['predicted_price'] = predicted_price
+                hotel['predicted_price'] = predicted_price // 1000
         return jsonify({'hotels': hotels})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
