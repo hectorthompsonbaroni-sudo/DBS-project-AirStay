@@ -27,10 +27,6 @@ AirStay uses KMeans clustering to segment customers based on their demographics 
 
 - **templates/index.html** - Web interface for interacting with the recommendation system
 
-### Configuration
-
-- **.gitignore** - Git ignore rules for the project
-
 ## Setup Guide
 
 ### Prerequisites
